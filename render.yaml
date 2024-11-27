@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: buity-saloon
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MYSQL_DATABASE
+        sync: false
+      - key: MYSQLUSER
+        sync: false
+      - key: MYSQLPASSWORD
+        sync: false
+      - key: MYSQLHOST
+        sync: false
+      - key: MYSQLPORT
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+    healthCheckPath: /
+    autoDeploy: true
