@@ -158,20 +158,84 @@ body {
     background-color: rgba(255,255,255,0.9);
 }
 
-/* Специальные стили для календаря */
+/* Стили для календаря */
 .flatpickr-calendar {
-    border-radius: 10px;
+    background: var(--white);
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    border: none;
+    padding: 10px;
+}
+
+.flatpickr-day {
+    border-radius: 5px;
+    margin: 2px;
+    height: 36px;
+    line-height: 36px;
 }
 
 .flatpickr-day.selected {
-    background-color: var(--primary-color);
+    background: var(--primary-color);
     border-color: var(--primary-color);
 }
 
 .flatpickr-day.selected:hover {
-    background-color: var(--accent-color);
+    background: var(--accent-color);
     border-color: var(--accent-color);
+}
+
+.flatpickr-day:hover {
+    background: var(--light-bg);
+}
+
+.flatpickr-current-month {
+    padding: 10px 0;
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+.flatpickr-time {
+    border-top: 1px solid var(--secondary-color);
+    padding: 10px 0;
+}
+
+.flatpickr-time input {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.flatpickr-time .flatpickr-am-pm {
+    font-size: 1em;
+    color: var(--text-color);
+}
+
+.input-group-text {
+    background-color: var(--white);
+    border-color: var(--secondary-color);
+    color: var(--primary-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.input-group-text:hover {
+    background-color: var(--light-bg);
+    color: var(--accent-color);
+}
+
+.flatpickr-calendar.open {
+    animation: fadeInCalendar 0.3s ease forwards;
+}
+
+@keyframes fadeInCalendar {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Адаптивность */

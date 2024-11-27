@@ -163,40 +163,48 @@ function logout() {
 document.addEventListener('DOMContentLoaded', () => {
     updateNavigation(!!token);
     checkAuth();
-    initializeFlatpickr();
+    initializeDatePicker();
 });
 
 // Инициализация выбора даты и времени
-function initializeFlatpickr() {
-    const dateTimeInput = document.getElementById('appointmentDateTime');
-    if (!dateTimeInput) return;
+function initializeDatePicker() {
+    const dateInput = document.getElementById('appointmentDateTime');
+    if (!dateInput) {
+        console.error('Date input not found');
+        return;
+    }
 
-    flatpickrInstance = flatpickr(dateTimeInput, {
+    flatpickrInstance = flatpickr(dateInput, {
         enableTime: true,
-        dateFormat: "Y-m-d H:i",
+        dateFormat: "d.m.Y H:i",
         minDate: "today",
         locale: "ru",
+        time_24hr: true,
+        minTime: "09:00",
+        maxTime: "20:00",
+        minuteIncrement: 30,
+        position: "auto",
+        disableMobile: "true",
         disable: [
             function(date) {
                 // Отключаем выходные
                 return (date.getDay() === 0 || date.getDay() === 6);
             }
         ],
-        // Рабочие часы с 9:00 до 20:00
-        minTime: "09:00",
-        maxTime: "20:00",
-        // Интервал 1 час
-        minuteIncrement: 60,
-        time_24hr: true,
-        // Делаем поле только для чтения
-        clickOpens: true,
-        disableMobile: false,
         onChange: function(selectedDates, dateStr, instance) {
             if (selectedDates.length > 0) {
                 checkTimeSlotAvailability(selectedDates[0]);
             }
         }
     });
+
+    // Добавляем обработчик клика на иконку календаря
+    const calendarIcon = document.querySelector('.input-group-text');
+    if (calendarIcon) {
+        calendarIcon.addEventListener('click', () => {
+            flatpickrInstance.open();
+        });
+    }
 }
 
 // Проверка авторизации
