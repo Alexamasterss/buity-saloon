@@ -4,7 +4,6 @@ let token = localStorage.getItem('token');
 let services = [];
 let specialists = [];
 let availableTimeSlots = [];
-let flatpickrInstance = null;
 
 // Функции для работы с интерфейсом
 function showLoginForm() {
@@ -163,46 +162,28 @@ function logout() {
 document.addEventListener('DOMContentLoaded', () => {
     updateNavigation(!!token);
     checkAuth();
-    initializeDatePicker();
+    initializeDateInput();
     loadServices();
 });
 
-// Инициализация выбора даты и времени
-function initializeDatePicker() {
-    const dateInput = document.getElementById('appointmentDateTime');
-    if (!dateInput) return;
-
-    const config = {
-        enableTime: true,
-        dateFormat: "d.m.Y H:i",
-        minDate: "today",
-        locale: "ru",
-        time_24hr: true,
-        minTime: "09:00",
-        maxTime: "20:00",
-        minuteIncrement: 30,
-        position: "auto",
-        disableMobile: false,
-        disable: [
-            function(date) {
-                return (date.getDay() === 0 || date.getDay() === 6);
+// Инициализация поля выбора даты
+function initializeDateInput() {
+    const dateInput = document.getElementById('appointmentDate');
+    if (dateInput) {
+        // Устанавливаем минимальную дату (сегодня)
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+        
+        // Добавляем обработчик изменения даты
+        dateInput.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const dayOfWeek = selectedDate.getDay();
+            
+            // Если выбраны выходные (суббота = 6, воскресенье = 0)
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                alert('Пожалуйста, выберите рабочий день (пн-пт)');
+                this.value = '';
             }
-        ],
-        onChange: function(selectedDates, dateStr, instance) {
-            console.log('Selected date:', dateStr);
-            if (selectedDates.length > 0) {
-                checkTimeSlotAvailability(selectedDates[0]);
-            }
-        }
-    };
-
-    flatpickrInstance = flatpickr(dateInput, config);
-
-    // Добавляем обработчик клика на иконку календаря
-    const calendarIcon = document.querySelector('.input-group-text');
-    if (calendarIcon) {
-        calendarIcon.addEventListener('click', () => {
-            dateInput._flatpickr.open();
         });
     }
 }
@@ -301,14 +282,14 @@ async function updateAvailableTime() {
     if (!specialistId) return;
 
     const today = new Date();
-    flatpickrInstance.set('enable', []);
+    //flatpickrInstance.set('enable', []);
     
     try {
         const response = await fetch(`/api/specialists/${specialistId}/availability?date=${today.toISOString().split('T')[0]}`);
         availableTimeSlots = await response.json();
         
         // Обновляем доступные слоты в календаре
-        flatpickrInstance.set('enable', availableTimeSlots.map(slot => new Date(slot)));
+        //flatpickrInstance.set('enable', availableTimeSlots.map(slot => new Date(slot)));
     } catch (error) {
         console.error('Error loading time slots:', error);
         showToast('Ошибка загрузки доступного времени', 'danger');
@@ -318,17 +299,19 @@ async function updateAvailableTime() {
 // Создание записи
 async function createAppointment(event) {
     event.preventDefault();
-    
+
     const serviceId = document.getElementById('serviceSelect').value;
     const specialistId = document.getElementById('specialistSelect').value;
-    const appointmentDateTime = document.getElementById('appointmentDateTime').value;
+    const date = document.getElementById('appointmentDate').value;
+    const time = document.getElementById('appointmentTime').value;
 
-    if (!serviceId || !specialistId || !appointmentDateTime) {
-        showToast('Пожалуйста, заполните все поля', 'danger');
+    if (!serviceId || !specialistId || !date || !time) {
+        showToast('Пожалуйста, заполните все поля', 'error');
         return;
     }
 
     try {
+        const appointmentDate = `${date}T${time}`;
         const response = await fetch('/api/appointments', {
             method: 'POST',
             headers: {
@@ -338,21 +321,26 @@ async function createAppointment(event) {
             body: JSON.stringify({
                 service_id: serviceId,
                 specialist_id: specialistId,
-                appointment_date: appointmentDateTime
+                appointment_date: appointmentDate
             })
         });
 
+        const data = await response.json();
+
         if (response.ok) {
             showToast('Запись успешно создана!', 'success');
-            loadAppointments();
-            event.target.reset();
+            loadAppointments(); // Обновляем список записей
+            // Очищаем форму
+            document.getElementById('serviceSelect').value = '';
+            document.getElementById('specialistSelect').value = '';
+            document.getElementById('appointmentDate').value = '';
+            document.getElementById('appointmentTime').value = '';
         } else {
-            const error = await response.json();
-            showToast(error.error, 'danger');
+            showToast(data.error || 'Ошибка при создании записи', 'error');
         }
     } catch (error) {
         console.error('Error creating appointment:', error);
-        showToast('Ошибка при создании записи', 'danger');
+        showToast('Ошибка при создании записи', 'error');
     }
 }
 
