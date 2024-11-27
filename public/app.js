@@ -164,17 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNavigation(!!token);
     checkAuth();
     initializeDatePicker();
+    loadServices();
 });
 
 // Инициализация выбора даты и времени
 function initializeDatePicker() {
     const dateInput = document.getElementById('appointmentDateTime');
-    if (!dateInput) {
-        console.error('Date input not found');
-        return;
-    }
+    if (!dateInput) return;
 
-    flatpickrInstance = flatpickr(dateInput, {
+    const config = {
         enableTime: true,
         dateFormat: "d.m.Y H:i",
         minDate: "today",
@@ -184,25 +182,27 @@ function initializeDatePicker() {
         maxTime: "20:00",
         minuteIncrement: 30,
         position: "auto",
-        disableMobile: "true",
+        disableMobile: false,
         disable: [
             function(date) {
-                // Отключаем выходные
                 return (date.getDay() === 0 || date.getDay() === 6);
             }
         ],
         onChange: function(selectedDates, dateStr, instance) {
+            console.log('Selected date:', dateStr);
             if (selectedDates.length > 0) {
                 checkTimeSlotAvailability(selectedDates[0]);
             }
         }
-    });
+    };
+
+    flatpickrInstance = flatpickr(dateInput, config);
 
     // Добавляем обработчик клика на иконку календаря
     const calendarIcon = document.querySelector('.input-group-text');
     if (calendarIcon) {
         calendarIcon.addEventListener('click', () => {
-            flatpickrInstance.open();
+            dateInput._flatpickr.open();
         });
     }
 }
