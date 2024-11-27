@@ -77,18 +77,57 @@ async function initializeDatabase() {
             console.log('Default specialists added successfully');
         }
 
+        // Create services table
+        const createServicesTable = `
+            CREATE TABLE IF NOT EXISTS services (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                duration INT, 
+                price DECIMAL(10,2),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+        
+        await pool.query(createServicesTable);
+        console.log('Services table created successfully');
+
+        // Insert default services if they don't exist
+        const [existingServices] = await pool.query('SELECT * FROM services');
+        if (existingServices.length === 0) {
+            const services = [
+                ['Женская стрижка', 'Стрижка любой сложности с мытьем головы', 60, 2500],
+                ['Мужская стрижка', 'Классическая мужская стрижка', 45, 1500],
+                ['Окрашивание волос', 'Окрашивание волос любой сложности', 120, 5000],
+                ['Маникюр классический', 'Классический маникюр с покрытием', 60, 2000],
+                ['Педикюр', 'Классический педикюр с покрытием', 90, 2500],
+                ['Чистка лица', 'Глубокая чистка лица', 90, 3500],
+                ['Массаж лица', 'Классический массаж лица', 30, 1500],
+                ['Укладка волос', 'Укладка волос любой сложности', 45, 2000]
+            ];
+            
+            for (const service of services) {
+                await pool.query(
+                    'INSERT INTO services (name, description, duration, price) VALUES (?, ?, ?, ?)',
+                    service
+                );
+            }
+            console.log('Default services added successfully');
+        }
+
         // Create appointments table with specialist_id
         const createAppointmentsTable = `
             CREATE TABLE IF NOT EXISTS appointments (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT,
                 specialist_id INT,
-                service_type VARCHAR(255),
+                service_id INT,
                 appointment_date DATETIME,
                 status VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id),
-                FOREIGN KEY (specialist_id) REFERENCES specialists(id)
+                FOREIGN KEY (specialist_id) REFERENCES specialists(id),
+                FOREIGN KEY (service_id) REFERENCES services(id)
             )
         `;
 
@@ -193,35 +232,114 @@ app.get('/api/specialists', async (req, res) => {
     }
 });
 
+// Get all services
+app.get('/api/services', async (req, res) => {
+    try {
+        const [services] = await pool.query('SELECT * FROM services');
+        res.json(services);
+    } catch (error) {
+        console.error('Error fetching services:', error);
+        res.status(500).json({ error: 'Failed to fetch services' });
+    }
+});
+
+// Get specialist's available time slots
+app.get('/api/specialists/:id/availability', authenticateToken, async (req, res) => {
+    try {
+        const { date } = req.query;
+        const specialistId = req.params.id;
+
+        if (!date) {
+            return res.status(400).json({ error: 'Date parameter is required' });
+        }
+
+        // Получаем все записи специалиста на выбранную дату
+        const [appointments] = await pool.query(
+            'SELECT appointment_date FROM appointments WHERE specialist_id = ? AND DATE(appointment_date) = DATE(?)',
+            [specialistId, date]
+        );
+
+        // Генерируем доступные временные слоты (с 9:00 до 20:00)
+        const timeSlots = [];
+        const startHour = 9;
+        const endHour = 20;
+        const interval = 60; // интервал в минутах
+
+        for (let hour = startHour; hour < endHour; hour++) {
+            const timeSlot = new Date(date);
+            timeSlot.setHours(hour, 0, 0, 0);
+            
+            // Проверяем, не занят ли слот
+            const isBooked = appointments.some(app => {
+                const appDate = new Date(app.appointment_date);
+                return appDate.getHours() === hour;
+            });
+
+            if (!isBooked) {
+                timeSlots.push(timeSlot);
+            }
+        }
+
+        res.json(timeSlots);
+    } catch (error) {
+        console.error('Error fetching availability:', error);
+        res.status(500).json({ error: 'Failed to fetch availability' });
+    }
+});
+
 // Appointments routes
 app.post('/api/appointments', authenticateToken, async (req, res) => {
     try {
         console.log('Creating appointment with data:', req.body);
-        const { service_type, appointment_date, specialist_id } = req.body;
+        const { service_id, appointment_date, specialist_id } = req.body;
         
-        if (!service_type || !appointment_date || !specialist_id) {
-            return res.status(400).json({ error: 'Service type, appointment date and specialist are required' });
+        if (!service_id || !appointment_date || !specialist_id) {
+            return res.status(400).json({ 
+                error: 'Все поля обязательны для заполнения',
+                required_fields: {
+                    service_id: 'ID услуги',
+                    appointment_date: 'Дата и время записи (формат: YYYY-MM-DD HH:mm:ss)',
+                    specialist_id: 'ID специалиста'
+                }
+            });
+        }
+
+        // Проверяем существование услуги
+        const [services] = await pool.query('SELECT * FROM services WHERE id = ?', [service_id]);
+        if (services.length === 0) {
+            return res.status(404).json({ error: 'Услуга не найдена' });
         }
 
         // Проверяем существование специалиста
-        const [specialists] = await pool.query('SELECT id FROM specialists WHERE id = ?', [specialist_id]);
+        const [specialists] = await pool.query('SELECT * FROM specialists WHERE id = ?', [specialist_id]);
         if (specialists.length === 0) {
-            return res.status(404).json({ error: 'Specialist not found' });
+            return res.status(404).json({ error: 'Специалист не найден' });
+        }
+
+        // Проверяем, не занято ли это время у специалиста
+        const appointmentTime = new Date(appointment_date);
+        const [existingAppointments] = await pool.query(
+            'SELECT * FROM appointments WHERE specialist_id = ? AND DATE(appointment_date) = DATE(?) AND HOUR(appointment_date) = HOUR(?)',
+            [specialist_id, appointmentTime, appointmentTime]
+        );
+
+        if (existingAppointments.length > 0) {
+            return res.status(400).json({ error: 'Это время уже занято у специалиста' });
         }
 
         const [result] = await pool.query(
-            'INSERT INTO appointments (user_id, specialist_id, service_type, appointment_date, status) VALUES (?, ?, ?, ?, ?)',
-            [req.user.id, specialist_id, service_type, appointment_date, 'pending']
+            'INSERT INTO appointments (user_id, specialist_id, service_id, appointment_date, status) VALUES (?, ?, ?, ?, ?)',
+            [req.user.id, specialist_id, service_id, appointment_date, 'pending']
         );
         
         console.log('Appointment created successfully:', result);
         res.status(201).json({ 
-            message: 'Appointment created successfully',
+            message: 'Запись успешно создана',
             appointment_id: result.insertId
         });
     } catch (error) {
         console.error('Error creating appointment:', error);
-        res.status(500).json({ error: 'Failed to create appointment' });
+        res.status(500).json({ error: 'Не удалось создать запись' });
     }
 });
 
@@ -231,9 +349,13 @@ app.get('/api/appointments', authenticateToken, async (req, res) => {
             `SELECT 
                 a.*, 
                 s.name as specialist_name, 
-                s.specialization 
+                s.specialization,
+                srv.name as service_name,
+                srv.duration,
+                srv.price
             FROM appointments a 
             JOIN specialists s ON a.specialist_id = s.id 
+            JOIN services srv ON a.service_id = srv.id
             WHERE a.user_id = ? 
             ORDER BY a.appointment_date DESC`,
             [req.user.id]
