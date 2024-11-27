@@ -168,7 +168,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Инициализация выбора даты и времени
 function initializeFlatpickr() {
-    flatpickrInstance = flatpickr("#appointmentDateTime", {
+    const dateTimeInput = document.getElementById('appointmentDateTime');
+    if (!dateTimeInput) return;
+
+    flatpickrInstance = flatpickr(dateTimeInput, {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
         minDate: "today",
@@ -185,6 +188,9 @@ function initializeFlatpickr() {
         // Интервал 1 час
         minuteIncrement: 60,
         time_24hr: true,
+        // Делаем поле только для чтения
+        clickOpens: true,
+        disableMobile: false,
         onChange: function(selectedDates, dateStr, instance) {
             if (selectedDates.length > 0) {
                 checkTimeSlotAvailability(selectedDates[0]);
