@@ -30,16 +30,22 @@ async function initializeDatabase() {
     try {
         console.log('Connecting to database...');
         
-        // Create tables if they don't exist
-        const createTables = `
+        // Create users table
+        const createUsersTable = `
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 username VARCHAR(255) NOT NULL UNIQUE,
                 email VARCHAR(255) NOT NULL UNIQUE,
                 password VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
+            )
+        `;
+        
+        await pool.query(createUsersTable);
+        console.log('Users table created successfully');
 
+        // Create appointments table
+        const createAppointmentsTable = `
             CREATE TABLE IF NOT EXISTS appointments (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT,
@@ -48,11 +54,11 @@ async function initializeDatabase() {
                 status VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id)
-            );
+            )
         `;
 
-        await pool.query(createTables);
-        console.log('Tables created successfully');
+        await pool.query(createAppointmentsTable);
+        console.log('Appointments table created successfully');
     } catch (err) {
         console.error('Error initializing database:', err);
         throw err;
