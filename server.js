@@ -147,6 +147,45 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
     }
 });
 
+// Appointments routes
+app.post('/api/appointments', authenticateToken, async (req, res) => {
+    try {
+        console.log('Creating appointment with data:', req.body);
+        const { service_type, appointment_date } = req.body;
+        
+        if (!service_type || !appointment_date) {
+            return res.status(400).json({ error: 'Service type and appointment date are required' });
+        }
+
+        const [result] = await pool.query(
+            'INSERT INTO appointments (user_id, service_type, appointment_date, status) VALUES (?, ?, ?, ?)',
+            [req.user.id, service_type, appointment_date, 'pending']
+        );
+        
+        console.log('Appointment created successfully:', result);
+        res.status(201).json({ 
+            message: 'Appointment created successfully',
+            appointment_id: result.insertId
+        });
+    } catch (error) {
+        console.error('Error creating appointment:', error);
+        res.status(500).json({ error: 'Failed to create appointment' });
+    }
+});
+
+app.get('/api/appointments', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT * FROM appointments WHERE user_id = ? ORDER BY appointment_date DESC',
+            [req.user.id]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching appointments:', error);
+        res.status(500).json({ error: 'Failed to fetch appointments' });
+    }
+});
+
 // Start server
 async function startServer() {
     try {
