@@ -3,97 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beauty Salon</title>
+    <title>Buity Salon - Онлайн запись</title>
+    
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container">
-            <a class="navbar-brand" href="#">Beauty Salon</a>
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-spa me-2"></i>Buity Salon
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item" id="loginNav">
-                        <a class="nav-link" href="#" onclick="showLoginForm()">Вход</a>
+                    <li class="nav-item" id="authButtons">
+                        <button class="btn btn-outline-primary me-2" onclick="showLoginForm()">Войти</button>
+                        <button class="btn btn-primary" onclick="showRegisterForm()">Регистрация</button>
                     </li>
-                    <li class="nav-item" id="registerNav">
-                        <a class="nav-link" href="#" onclick="showRegisterForm()">Регистрация</a>
-                    </li>
-                    <li class="nav-item d-none" id="profileNav">
-                        <a class="nav-link" href="#" onclick="showProfile()">Профиль</a>
-                    </li>
-                    <li class="nav-item d-none" id="logoutNav">
-                        <a class="nav-link" href="#" onclick="logout()">Выход</a>
+                    <li class="nav-item d-none" id="userInfo">
+                        <span class="me-2">
+                            <i class="fas fa-user me-1"></i>
+                            <span id="userEmail"></span>
+                        </span>
+                        <button class="btn btn-outline-danger" onclick="logout()">
+                            <i class="fas fa-sign-out-alt me-1"></i>Выйти
+                        </button>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-5">
-        <div id="loginForm" class="auth-form">
-            <h2>Вход в систему</h2>
-            <form onsubmit="login(event)">
-                <div class="mb-3">
-                    <label for="loginEmail" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="loginEmail" required>
-                </div>
-                <div class="mb-3">
-                    <label for="loginPassword" class="form-label">Пароль</label>
-                    <input type="password" class="form-control" id="loginPassword" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Войти</button>
-            </form>
-        </div>
-
-        <div id="registerForm" class="auth-form d-none">
-            <h2>Регистрация</h2>
-            <form onsubmit="register(event)">
-                <div class="mb-3">
-                    <label for="registerUsername" class="form-label">Имя пользователя</label>
-                    <input type="text" class="form-control" id="registerUsername" required>
-                </div>
-                <div class="mb-3">
-                    <label for="registerEmail" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="registerEmail" required>
-                </div>
-                <div class="mb-3">
-                    <label for="registerPassword" class="form-label">Пароль</label>
-                    <input type="password" class="form-control" id="registerPassword" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-            </form>
-        </div>
-
-        <div id="profileSection" class="d-none">
-            <h2>Личный кабинет</h2>
-            <div id="profileInfo"></div>
-            <div class="mt-4">
-                <h3>Записаться на услугу</h3>
-                <form onsubmit="bookAppointment(event)">
+    <!-- Основной контент -->
+    <div class="container mt-4">
+        <!-- Формы авторизации -->
+        <div id="authForms">
+            <!-- Форма входа -->
+            <div class="auth-form fade-in" id="loginForm">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-lock me-2"></i>Вход в систему
+                </h2>
+                <form onsubmit="login(event)">
                     <div class="mb-3">
-                        <label for="serviceType" class="form-label">Выберите услугу</label>
-                        <select class="form-control" id="serviceType" required>
-                            <option value="haircut">Стрижка</option>
-                            <option value="coloring">Окрашивание</option>
-                            <option value="manicure">Маникюр</option>
-                            <option value="pedicure">Педикюр</option>
-                        </select>
+                        <label for="loginEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="loginEmail" required>
                     </div>
                     <div class="mb-3">
-                        <label for="appointmentDate" class="form-label">Выберите дату и время</label>
-                        <input type="datetime-local" class="form-control" id="appointmentDate" required>
+                        <label for="loginPassword" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="loginPassword" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">Записаться</button>
+                    <button type="submit" class="btn btn-primary w-100">Войти</button>
+                    <p class="text-center mt-3">
+                        Нет аккаунта? 
+                        <a href="#" onclick="showRegisterForm()">Зарегистрироваться</a>
+                    </p>
                 </form>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div class="auth-form fade-in d-none" id="registerForm">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-user-plus me-2"></i>Регистрация
+                </h2>
+                <form onsubmit="register(event)">
+                    <div class="mb-3">
+                        <label for="registerUsername" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="registerUsername" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="registerEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="registerEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="registerPassword" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="registerPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+                    <p class="text-center mt-3">
+                        Уже есть аккаунт? 
+                        <a href="#" onclick="showLoginForm()">Войти</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Основной контент после авторизации -->
+        <div id="mainContent" class="d-none">
+            <!-- Форма создания записи -->
+            <div class="card mb-4 fade-in">
+                <div class="card-header bg-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-calendar-plus me-2"></i>Новая запись
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form onsubmit="createAppointment(event)">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="serviceSelect" class="form-label">Услуга</label>
+                                <select class="form-select" id="serviceSelect" required onchange="updateSpecialists()">
+                                    <option value="">Выберите услугу</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="specialistSelect" class="form-label">Специалист</label>
+                                <select class="form-select" id="specialistSelect" required onchange="updateAvailableTime()">
+                                    <option value="">Сначала выберите услугу</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="appointmentDateTime" class="form-label">Дата и время</label>
+                            <input type="text" class="form-control" id="appointmentDateTime" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-2"></i>Записаться
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Список записей -->
+            <div class="card fade-in">
+                <div class="card-header bg-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>Мои записи
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Услуга</th>
+                                    <th>Специалист</th>
+                                    <th>Дата и время</th>
+                                    <th>Статус</th>
+                                    <th>Стоимость</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appointmentsList">
+                                <!-- Здесь будут записи -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Toast уведомления -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Уведомление</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toastMessage"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
