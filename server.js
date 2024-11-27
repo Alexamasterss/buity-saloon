@@ -44,16 +44,51 @@ async function initializeDatabase() {
         await pool.query(createUsersTable);
         console.log('Users table created successfully');
 
-        // Create appointments table
+        // Create specialists table
+        const createSpecialistsTable = `
+            CREATE TABLE IF NOT EXISTS specialists (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                specialization VARCHAR(255) NOT NULL,
+                experience_years INT,
+                rating DECIMAL(3,2),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+        
+        await pool.query(createSpecialistsTable);
+        console.log('Specialists table created successfully');
+
+        // Insert default specialists if they don't exist
+        const [existingSpecialists] = await pool.query('SELECT * FROM specialists');
+        if (existingSpecialists.length === 0) {
+            const specialists = [
+                ['Анна Петрова', 'Парикмахер-стилист', 5, 4.8],
+                ['Мария Иванова', 'Мастер маникюра', 3, 4.9],
+                ['Елена Сидорова', 'Косметолог', 7, 4.7]
+            ];
+            
+            for (const specialist of specialists) {
+                await pool.query(
+                    'INSERT INTO specialists (name, specialization, experience_years, rating) VALUES (?, ?, ?, ?)',
+                    specialist
+                );
+            }
+            console.log('Default specialists added successfully');
+        }
+
+        // Create appointments table with specialist_id
         const createAppointmentsTable = `
             CREATE TABLE IF NOT EXISTS appointments (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT,
+                specialist_id INT,
                 service_type VARCHAR(255),
                 appointment_date DATETIME,
                 status VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id)
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (specialist_id) REFERENCES specialists(id)
             )
         `;
 
@@ -147,19 +182,36 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
     }
 });
 
+// Get all specialists
+app.get('/api/specialists', async (req, res) => {
+    try {
+        const [specialists] = await pool.query('SELECT * FROM specialists');
+        res.json(specialists);
+    } catch (error) {
+        console.error('Error fetching specialists:', error);
+        res.status(500).json({ error: 'Failed to fetch specialists' });
+    }
+});
+
 // Appointments routes
 app.post('/api/appointments', authenticateToken, async (req, res) => {
     try {
         console.log('Creating appointment with data:', req.body);
-        const { service_type, appointment_date } = req.body;
+        const { service_type, appointment_date, specialist_id } = req.body;
         
-        if (!service_type || !appointment_date) {
-            return res.status(400).json({ error: 'Service type and appointment date are required' });
+        if (!service_type || !appointment_date || !specialist_id) {
+            return res.status(400).json({ error: 'Service type, appointment date and specialist are required' });
+        }
+
+        // Проверяем существование специалиста
+        const [specialists] = await pool.query('SELECT id FROM specialists WHERE id = ?', [specialist_id]);
+        if (specialists.length === 0) {
+            return res.status(404).json({ error: 'Specialist not found' });
         }
 
         const [result] = await pool.query(
-            'INSERT INTO appointments (user_id, service_type, appointment_date, status) VALUES (?, ?, ?, ?)',
-            [req.user.id, service_type, appointment_date, 'pending']
+            'INSERT INTO appointments (user_id, specialist_id, service_type, appointment_date, status) VALUES (?, ?, ?, ?, ?)',
+            [req.user.id, specialist_id, service_type, appointment_date, 'pending']
         );
         
         console.log('Appointment created successfully:', result);
@@ -176,7 +228,14 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
 app.get('/api/appointments', authenticateToken, async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT * FROM appointments WHERE user_id = ? ORDER BY appointment_date DESC',
+            `SELECT 
+                a.*, 
+                s.name as specialist_name, 
+                s.specialization 
+            FROM appointments a 
+            JOIN specialists s ON a.specialist_id = s.id 
+            WHERE a.user_id = ? 
+            ORDER BY a.appointment_date DESC`,
             [req.user.id]
         );
         res.json(rows);
