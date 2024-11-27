@@ -34,8 +34,8 @@ async function initializeDatabase() {
         const createUsersTable = `
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) NOT NULL UNIQUE,
-                email VARCHAR(255) NOT NULL UNIQUE,
+                username VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -50,8 +50,7 @@ async function initializeDatabase() {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 specialization VARCHAR(255) NOT NULL,
-                experience_years INT,
-                rating DECIMAL(3,2),
+                description TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `;
@@ -63,14 +62,14 @@ async function initializeDatabase() {
         const [existingSpecialists] = await pool.query('SELECT * FROM specialists');
         if (existingSpecialists.length === 0) {
             const specialists = [
-                ['Анна Петрова', 'Парикмахер-стилист', 5, 4.8],
-                ['Мария Иванова', 'Мастер маникюра', 3, 4.9],
-                ['Елена Сидорова', 'Косметолог', 7, 4.7]
+                ['Анна Петрова', 'Парикмахер-стилист', ''],
+                ['Мария Иванова', 'Мастер маникюра', ''],
+                ['Елена Сидорова', 'Косметолог', '']
             ];
             
             for (const specialist of specialists) {
                 await pool.query(
-                    'INSERT INTO specialists (name, specialization, experience_years, rating) VALUES (?, ?, ?, ?)',
+                    'INSERT INTO specialists (name, specialization, description) VALUES (?, ?, ?)',
                     specialist
                 );
             }
@@ -83,8 +82,8 @@ async function initializeDatabase() {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 description TEXT,
-                duration INT, 
-                price DECIMAL(10,2),
+                duration INT NOT NULL,
+                price DECIMAL(10,2) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `;
@@ -115,9 +114,24 @@ async function initializeDatabase() {
             console.log('Default services added successfully');
         }
 
-        // Create appointments table with specialist_id
+        // Пересоздаем таблицу записей
+        await recreateAppointmentsTable();
+        
+    } catch (err) {
+        console.error('Error initializing database:', err);
+        throw err;
+    }
+}
+
+// Пересоздание таблицы appointments
+async function recreateAppointmentsTable() {
+    try {
+        // Удаляем существующую таблицу
+        await pool.query('DROP TABLE IF EXISTS appointments');
+        
+        // Создаем таблицу заново
         const createAppointmentsTable = `
-            CREATE TABLE IF NOT EXISTS appointments (
+            CREATE TABLE appointments (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT,
                 specialist_id INT,
@@ -130,11 +144,11 @@ async function initializeDatabase() {
                 FOREIGN KEY (service_id) REFERENCES services(id)
             )
         `;
-
+        
         await pool.query(createAppointmentsTable);
-        console.log('Appointments table created successfully');
+        console.log('Appointments table recreated successfully');
     } catch (err) {
-        console.error('Error initializing database:', err);
+        console.error('Error recreating appointments table:', err);
         throw err;
     }
 }
