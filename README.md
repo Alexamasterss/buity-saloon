@@ -106,12 +106,4 @@ buity-saloon/
 4. Отправьте изменения в ветку (`git push origin feature/amazing-feature`)
 5. Откройте Pull Request
 
-## Лицензия
-
-Распространяется под лицензией ISC. Смотрите `LICENSE` для получения дополнительной информации.
-
-## Контакты
-
-Your Name - your.email@example.com
-
-Project Link: [https://github.com/yourusername/buity-saloon](https://github.com/yourusername/buity-saloon)
+Project Link:(https://buity-saloon.onrender.com))
